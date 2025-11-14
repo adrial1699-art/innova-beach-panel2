@@ -1,0 +1,1 @@
+Innova Beach III - Panel Web (fixed). Change SHEET_ID in src/PanelInnovaBeach.jsx if needed.
