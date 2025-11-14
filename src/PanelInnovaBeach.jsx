@@ -593,6 +593,3 @@ function ViviendaModal({ vivienda, onClose, fotos = [], rows = [] }) {
     </div>
   );
 }
-
-  );
-}
