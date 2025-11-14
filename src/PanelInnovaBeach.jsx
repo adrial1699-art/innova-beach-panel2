@@ -480,9 +480,39 @@ function IncidentForm({ onClose, formUrl }) {
   );
 }
 
-/* Vivienda modal */
+/* Vivienda modal (reemplaza la versión anterior) */
 function ViviendaModal({ vivienda, onClose, fotos = [], rows = [] }) {
+  // rows: todas las filas relacionadas con esa vivienda (ya filtradas por quien abrió el modal)
+  // Asumimos que rows[0] es la última (más reciente) porque el main loader invierte rows.
+  const latest = (rows && rows.length) ? rows[0] : null;
+
+  // Construir el estado por tarea: si latest tiene "sí" -> hecho.
+  // Si no hay dato claro en latest, hacemos fallback: si alguna fila en rows tiene "sí" para la tarea -> hecho.
+  const taskStatuses = TASKS.map((t) => {
+    const keyExact = t; // tal cual aparece en la hoja
+    const keyLower = t.toLowerCase();
+    // valor en la fila más reciente (si existe)
+    const valLatest = latest ? (latest[keyExact] ?? latest[keyLower] ?? "") : "";
+    let done = String(valLatest).toLowerCase().includes("sí");
+    if (!done && rows && rows.length) {
+      // fallback: buscar en todo el historial de la vivienda
+      for (const r of rows) {
+        const v = (r[keyExact] ?? r[keyLower] ?? "");
+        if (String(v).toLowerCase().includes("sí")) {
+          done = true;
+          break;
+        }
+      }
+    }
+    return { task: t, done };
+  });
+
+  const doneCount = taskStatuses.filter(s => s.done).length;
+  const total = taskStatuses.length;
+  const pct = Math.round((doneCount / total) * 1000) / 10;
+
   const url = typeof window !== "undefined" ? window.location.href.split("?")[0] + `?vivienda=${vivienda}` : `?vivienda=${vivienda}`;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-start md:items-center justify-center z-50 p-4 overflow-auto">
       <div className="bg-white dark:bg-slate-800 rounded shadow max-w-4xl w-full p-4">
@@ -494,33 +524,75 @@ function ViviendaModal({ vivienda, onClose, fotos = [], rows = [] }) {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Fotos + resumen */}
+          <div className="md:col-span-1">
             <h4 className="font-semibold mb-2">Fotos ({fotos.length})</h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 mb-3">
               {fotos.length ? fotos.map((f, i) => (
                 <a key={i} href={f.url} target="_blank" rel="noreferrer" className="block">
-                  <img src={f.url} alt={`foto-${i}`} className="w-full h-36 object-cover rounded" />
+                  <img src={f.url} alt={`foto-${i}`} className="w-full h-28 object-cover rounded" />
                   <div className="text-xs text-slate-400 mt-1">{smallDate(f.time)}</div>
                 </a>
               )) : <div className="text-sm text-slate-400">No hay fotos para esta vivienda.</div>}
             </div>
+
+            <div className="p-3 rounded border bg-white dark:bg-slate-800">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-slate-400">Resumen progreso</div>
+                <div className="font-semibold">{pct}%</div>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden mb-2">
+                <div className="h-3 rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg,#0A4BE0,#007AFF)" }} />
+              </div>
+              <div className="text-sm text-slate-400">{doneCount} de {total} tareas hechas</div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold mb-2">Historial (últimas respuestas)</h4>
-            <div className="max-h-72 overflow-auto space-y-2">
-              {rows.length ? rows.map((r, idx) => (
-                <div key={idx} className="p-2 border rounded">
-                  <div className="text-sm text-slate-400">{smallDate(r["Marca temporal"] || r["Marca Temporal"])}</div>
-                  <div className="text-sm">{r["Tareas realizadas"] || r["Tareas realizadas"] || ""}</div>
-                  {r["Foto"] ? <a href={r["Foto"]} target="_blank" rel="noreferrer"><img src={r["Foto"]} alt="foto" className="mt-2 h-20 w-full object-cover rounded" /></a> : null}
+          {/* Desglose tareas (lista) */}
+          <div className="md:col-span-2">
+            <h4 className="font-semibold mb-2">Desglose tareas</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {taskStatuses.map((s, idx) => (
+                <div key={s.task} className="flex items-center gap-3 p-2 rounded border bg-white dark:bg-slate-800">
+                  <div className="w-8 flex-shrink-0">
+                    {s.done ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-green-500">
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-slate-400">
+                        <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className={`font-medium ${s.done ? "text-slate-900 dark:text-white" : "text-slate-500"}`}>{s.task}</div>
+                    <div className="text-xs text-slate-400">{s.done ? "Hecho" : "Pendiente"}</div>
+                  </div>
                 </div>
-              )) : <div className="text-sm text-slate-400">No hay historial para esta vivienda.</div>}
+              ))}
+            </div>
+
+            {/* Historial resumido debajo */}
+            <div className="mt-4">
+              <h5 className="font-semibold mb-2">Historial reciente</h5>
+              <div className="max-h-48 overflow-auto space-y-2">
+                {rows.length ? rows.map((r, i) => (
+                  <div key={i} className="p-2 border rounded bg-white dark:bg-slate-800">
+                    <div className="text-sm text-slate-400 mb-1">{smallDate(r["Marca temporal"] || r["Marca Temporal"] || r["Timestamp"])}</div>
+                    <div className="text-sm">{r["Tareas realizadas"] || r["Tareas realizadas"] || ""}</div>
+                    {r["Foto"] ? <a href={r["Foto"]} target="_blank" rel="noreferrer"><img src={r["Foto"]} alt="foto" className="mt-2 h-20 w-full object-cover rounded" /></a> : null}
+                  </div>
+                )) : <div className="text-sm text-slate-400">No hay historial para esta vivienda.</div>}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
   );
 }
