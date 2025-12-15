@@ -1,7 +1,8 @@
 {
-  "name": "innova-beach-panel",
+  "name": "innova-panel",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -9,19 +10,10 @@
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-qr-code": "^2.0.6",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "vite": "^5.0.0",
     "@vitejs/plugin-react": "^4.0.0",
-    "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0"
-  },
-  "engines": {
-    "node": "20.x"
+    "vite": "^5.0.0"
   }
 }
