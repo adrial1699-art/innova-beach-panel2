@@ -1,127 +1,80 @@
+
 import { useEffect, useState } from "react";
 import { OBRAS, SHEET_ID } from "./obras";
 
 export default function App() {
-  const [obra, setObra] = useState("INNOVA BEACH III");
+  const [obra, setObra] = useState("");
   const [bloque, setBloque] = useState("");
   const [vivienda, setVivienda] = useState("");
-  const [respuestas, setRespuestas] = useState([]);
+  const [rows, setRows] = useState([]);
 
-  const obraConfig = OBRAS[obra];
-
-  // Cargar datos del Sheet correcto
   useEffect(() => {
-    setBloque("");
-    setVivienda("");
-    setRespuestas([]);
-
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
-      obraConfig.sheetName
-    )}`;
+    if (!obra) return;
+    const sheetName = OBRAS[obra].sheetName;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
 
     fetch(url)
-      .then((r) => r.text())
-      .then((t) => {
+      .then(r => r.text())
+      .then(t => {
         const json = JSON.parse(t.substring(47).slice(0, -2));
-        const rows = json.table.rows.map((r) => ({
+        const data = json.table.rows.map(r => ({
           bloque: r.c[1]?.v || "",
-          vivienda: Number(r.c[2]?.v),
+          vivienda: r.c[2]?.v || "",
           tareas: r.c[3]?.v || "",
+          fecha: r.c[0]?.v || ""
         }));
-        setRespuestas(rows);
+        setRows(data);
       });
   }, [obra]);
 
-  // Filtrar respuestas reales
-  const respuestasVivienda = respuestas.filter(
-    (r) => r.bloque === bloque && r.vivienda === vivienda
+  useEffect(() => {
+    setBloque("");
+    setVivienda("");
+  }, [obra]);
+
+  useEffect(() => {
+    setVivienda("");
+  }, [bloque]);
+
+  const bloques = obra ? Object.keys(OBRAS[obra].bloques) : [];
+  const viviendas = obra && bloque ? OBRAS[obra].bloques[bloque] : [];
+
+  const registrosVivienda = rows.filter(
+    r => r.bloque === bloque && String(r.vivienda) === String(vivienda)
   );
 
-  // Extraer tareas únicas
-  const tareasHechas = new Set();
-  respuestasVivienda.forEach((r) => {
-    r.tareas
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean)
-      .forEach((t) => tareasHechas.add(t));
-  });
-
-  const TOTAL_TAREAS = 18; // AJUSTA si cambian
-  const progreso = Math.round((tareasHechas.size / TOTAL_TAREAS) * 100);
+  const progreso = Math.min(100, registrosVivienda.length * 10);
 
   return (
-    <div style={{ background: "#eee", minHeight: "100vh", padding: 20 }}>
-      {/* CABECERA */}
-      <div
-        style={{
-          border: "4px double blue",
-          background: "#ddd",
-          padding: 10,
-          marginBottom: 20,
-        }}
-      >
-        <h2 style={{ textAlign: "center" }}>Panel de Progreso de Obra</h2>
-        {/* AQUÍ PUEDES VOLVER A METER LOGOS */}
-      </div>
+    <div style={{ padding: 20, fontFamily: "Arial", background: "#eee", minHeight: "100vh" }}>
+      <h2>Panel de Progreso de Obra</h2>
 
-      {/* SELECTORES */}
-      <div style={{ display: "flex", gap: 10 }}>
-        <select value={obra} onChange={(e) => setObra(e.target.value)}>
-          {Object.keys(OBRAS).map((o) => (
-            <option key={o}>{o}</option>
-          ))}
+      <select value={obra} onChange={e => setObra(e.target.value)}>
+        <option value="">Selecciona obra</option>
+        {Object.keys(OBRAS).map(o => <option key={o}>{o}</option>)}
+      </select>
+
+      {obra && (
+        <select value={bloque} onChange={e => setBloque(e.target.value)}>
+          <option value="">Selecciona bloque</option>
+          {bloques.map(b => <option key={b}>{b}</option>)}
         </select>
+      )}
 
-        <select
-          value={bloque}
-          onChange={(e) => setBloque(e.target.value)}
-        >
-          <option value="">Bloque</option>
-          {Object.keys(obraConfig.bloques).map((b) => (
-            <option key={b}>{b}</option>
-          ))}
+      {bloque && (
+        <select value={vivienda} onChange={e => setVivienda(e.target.value)}>
+          <option value="">Selecciona vivienda</option>
+          {viviendas.map(v => <option key={v}>V{v}</option>)}
         </select>
+      )}
 
-        <select
-          value={vivienda}
-          onChange={(e) => setVivienda(Number(e.target.value))}
-          disabled={!bloque}
-        >
-          <option value="">Vivienda</option>
-          {bloque &&
-            obraConfig.bloques[bloque].map((v) => (
-              <option key={v}>V{v}</option>
-            ))}
-        </select>
-      </div>
-
-      {/* PANEL */}
-      {bloque && vivienda && (
-        <div
-          style={{
-            marginTop: 20,
-            border: "2px solid green",
-            padding: 15,
-            background: "#f7f7f7",
-          }}
-        >
-          <strong>
-            {obra} · {bloque} · Vivienda V{vivienda}
-          </strong>
-
-          <p>Tareas completadas: {tareasHechas.size} / {TOTAL_TAREAS}</p>
-
+      {vivienda && (
+        <div style={{ marginTop: 20, padding: 15, border: "2px solid green", background: "#fff" }}>
+          <strong>{obra} · {bloque} · Vivienda V{vivienda}</strong>
+          <p>Registros: {registrosVivienda.length}</p>
           <div style={{ background: "#ccc", height: 20 }}>
-            <div
-              style={{
-                width: `${progreso}%`,
-                height: "100%",
-                background: progreso === 100 ? "green" : "#4caf50",
-              }}
-            />
+            <div style={{ width: progreso + "%", height: "100%", background: "green" }} />
           </div>
-
           <p>{progreso}%</p>
         </div>
       )}
