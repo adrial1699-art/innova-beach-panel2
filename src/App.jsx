@@ -1,104 +1,124 @@
 import { useEffect, useState } from "react";
-import { OBRAS } from "./obras";
 
 const SHEET_ID = "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw";
 
+const OBRAS = {
+  "INNOVA BEACH III": {
+    sheetName: "INNOVA BEACH III",
+    bloques: {
+      "Bloque 1": [1,2,3,4,5,6],
+      "Bloque 2": [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22],
+      "Dúplex": [23,24]
+    }
+  },
+  "INNOVA BEACH IV": {
+    sheetName: "INNOVA BEACH IV",
+    bloques: {
+      "Bloque 1": [1,2,3,4,5,6,7,8],
+      "Bloque 2": [9,10,11,12,13,14,15,16],
+      "Bloque 3": [17,18,19,20,21,22,23,24,25,26,27,28],
+      "Bloque 4": [29,30,31,32,33,34],
+      "Bloque 5": [35,36,37,38,39,40,41,42,43,44]
+    }
+  },
+  "INNOVA THIAR": {
+    sheetName: "INNOVA THIAR",
+    bloques: {
+      "Bloque 1": [1,2,3,4,5,6,7,8],
+      "Bloque 2": [9,10,11,12,13,14,15,16],
+      "Bloque 3": [17,18,19,20,21,22,23,24,25,26,27,28],
+      "Bloque 4": [29,30,31,32,33,34],
+      "Bloque 5": [35,36,37,38,39,40,41,42,43,44]
+    }
+  }
+};
+
 export default function App() {
-  const [obraSeleccionada, setObraSeleccionada] = useState("");
-  const [tareas, setTareas] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [obra, setObra] = useState("");
+  const [bloque, setBloque] = useState("");
+  const [vivienda, setVivienda] = useState("");
+  const [rows, setRows] = useState([]);
 
-  // --- CARGA DATOS CUANDO CAMBIA LA OBRA ---
   useEffect(() => {
-    if (!obraSeleccionada) return;
+    if (!obra) return;
 
-    const cargarDatos = async () => {
-      setLoading(true);
-      setError("");
-      setTareas([]);
+    const sheetName = OBRAS[obra].sheetName;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&tqx=out:json`;
 
-      try {
-        const url = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(
-          obraSeleccionada
-        )}`;
+    fetch(url)
+      .then(r => r.text())
+      .then(text => {
+        const json = JSON.parse(text.substring(47).slice(0, -2));
+        const cols = json.table.cols.map(c => c.label);
+        const data = json.table.rows.map(r => {
+          const obj = {};
+          r.c.forEach((cell, i) => {
+            obj[cols[i]] = cell?.v || "";
+          });
+          return obj;
+        });
+        setRows(data);
+      });
+  }, [obra]);
 
-        const res = await fetch(url);
-
-        if (!res.ok) {
-          throw new Error("No se pudo cargar el Sheet");
-        }
-
-        const data = await res.json();
-
-        if (!Array.isArray(data)) {
-          throw new Error("Datos inválidos");
-        }
-
-        setTareas(data);
-      } catch (err) {
-        console.error(err);
-        setError("Error cargando datos de la obra");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    cargarDatos();
-  }, [obraSeleccionada]);
-
-  // --- RENDER ---
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Control de obras</h2>
+    <div style={{ background: "#e5e5e5", minHeight: "100vh" }}>
+      <header style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: 10,
+        border: "4px double blue",
+        background: "#f0f0f0"
+      }}>
+        <img src="/logos/innova.png" height={40} />
+        <h2>Panel de Obra</h2>
+        <img src="/logos/winplast.png" height={40} />
+      </header>
 
-      {/* SELECTOR DE OBRA */}
-      <select
-        value={obraSeleccionada}
-        onChange={(e) => setObraSeleccionada(e.target.value)}
-      >
-        <option value="">Selecciona una obra</option>
-        {OBRAS.map((obra) => (
-          <option key={obra} value={obra}>
-            {obra}
-          </option>
-        ))}
-      </select>
+      <div style={{ display: "flex" }}>
+        <aside style={{
+          width: 260,
+          background: "#ddd",
+          padding: 15,
+          borderRight: "4px double green"
+        }}>
+          <select onChange={e => { setObra(e.target.value); setBloque(""); }}>
+            <option value="">Obra</option>
+            {Object.keys(OBRAS).map(o => <option key={o}>{o}</option>)}
+          </select>
 
-      {/* MENSAJES DE ESTADO */}
-      {!obraSeleccionada && (
-        <p style={{ marginTop: 20 }}>Selecciona una obra para empezar</p>
-      )}
+          {obra && (
+            <select onChange={e => { setBloque(e.target.value); setVivienda(""); }}>
+              <option value="">Bloque</option>
+              {Object.keys(OBRAS[obra].bloques).map(b => <option key={b}>{b}</option>)}
+            </select>
+          )}
 
-      {loading && <p style={{ marginTop: 20 }}>Cargando datos…</p>}
+          {bloque && (
+            <select onChange={e => setVivienda(e.target.value)}>
+              <option value="">Vivienda</option>
+              {OBRAS[obra].bloques[bloque].map(v => (
+                <option key={v}>V{v}</option>
+              ))}
+            </select>
+          )}
+        </aside>
 
-      {error && (
-        <p style={{ marginTop: 20, color: "red" }}>
-          {error}
-        </p>
-      )}
-
-      {/* LISTADO DE TAREAS */}
-      {!loading && !error && tareas.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Tareas</h3>
-          <ul>
-            {tareas.map((tarea, index) => (
-              <li key={index}>
-                {tarea.Tarea || "Sin nombre"}{" "}
-                {tarea.Estado && `— ${tarea.Estado}`}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* SIN TAREAS */}
-      {!loading && obraSeleccionada && tareas.length === 0 && !error && (
-        <p style={{ marginTop: 20 }}>
-          No hay tareas para esta obra
-        </p>
-      )}
+        <main style={{ padding: 20, flex: 1 }}>
+          {!vivienda && <p>Selecciona una vivienda</p>}
+          {vivienda && (
+            <div style={{
+              background: "#fff",
+              padding: 20,
+              border: "4px double green"
+            }}>
+              <h3>{obra} · {bloque} · V{vivienda}</h3>
+              <p>Respuestas registradas: {rows.filter(r => r.Vivienda === `V${vivienda}`).length}</p>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
