@@ -21,7 +21,7 @@ const OBRAS = {
     }
   },
   "Innova Thiar": {
-    sheetId: 17 "aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw",
+    sheetId: "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw",
     bloques: {
       "Bloque 1": [1,2,3,4,5,6,7,8],
       "Bloque 2": [9,10,11,12,13,14,15,16],
