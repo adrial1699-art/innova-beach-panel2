@@ -64,7 +64,7 @@ export default function App(){
   useEffect(()=>{
     if(!obra) return;
     const sheetId = OBRAS[obra].sheetId;
-    const url = `https://docs.google.com/spreadsheets/d/${17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw}/gviz/tq?tqx=out:json`;
+    const url = `https://docs.google.com/spreadsheets/d/${sheetid}/gviz/tq?tqx=out:json`;
 
     fetch(url)
       .then(r=>r.text())
