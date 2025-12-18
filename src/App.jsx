@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 
 // ===== CONFIG OBRAS =====
 const OBRAS = {
-  "Innova Beach III": {
-    sheetId: "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw ",
+  "INNOVA BEACH III": {
+    sheetId: "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw",
     bloques: {
       "Bloque 1": [1,2,3,4,5,6],
       "Bloque 2": [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22],
       "Dúplex": [23,24]
     }
   },
-  "Innova Beach IV": {
+  "INNOVA BEACH IV": {
     sheetId: "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw",
     bloques: {
       "Bloque 1": [1,2,3,4,5,6,7,8],
@@ -20,7 +20,7 @@ const OBRAS = {
       "Bloque 5": [35,36,37,38,39,40,41,42,43,44]
     }
   },
-  "Innova Thiar": {
+  "INNOVA THIAR": {
     sheetId: "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw",
     bloques: {
       "Bloque 1": [1,2,3,4,5,6,7,8],
@@ -64,7 +64,7 @@ export default function App(){
   useEffect(()=>{
     if(!obra) return;
     const sheetId = OBRAS[obra].sheetId;
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+    const url = `https://docs.google.com/spreadsheets/d/${17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw}/gviz/tq?tqx=out:json`;
 
     fetch(url)
       .then(r=>r.text())
