@@ -1,130 +1,104 @@
 import { useEffect, useState } from "react";
+import { OBRAS } from "./obras";
 
 const SHEET_ID = "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw";
 
-const OBRAS = {
-  "INNOVA BEACH III": {
-    bloques: {
-      "Bloque 1": [1,2,3,4,5,6],
-      "Bloque 2": [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22],
-      "Dúplex": [23,24]
-    }
-  },
-  "INNOVA BEACH IV": {
-    bloques: {
-      "Bloque 1": [1,2,3,4,5,6,7,8],
-      "Bloque 2": [9,10,11,12,13,14,15,16],
-      "Bloque 3": [17,18,19,20,21,22,23,24,25,26,27,28],
-      "Bloque 4": [29,30,31,32,33,34],
-      "Bloque 5": [35,36,37,38,39,40,41,42,43,44],
-    }
-  },
-  "INNOVA THIAR": {
-    bloques: {
-      "Bloque 1": [1,2,3,4,5,6,7,8],
-      "Bloque 2": [9,10,11,12,13,14,15,16],
-      "Bloque 3": [17,18,19,20,21,22,23,24,25,26,27,28],
-      "Bloque 4": [29,30,31,32,33,34],
-      "Bloque 5": [35,36,37,38,39,40,41,42,43,44],
-    }
-  }
-};
-
-// Lista base de tareas (luego afinamos reglas)
-const TASKS = [
-  "Poner Ventanas",
-  "Poner hojas correderas",
-  "Cristales fijos",
-  "Poner manetas",
-  "Regular",
-  "Poner cierres",
-  "Poner chapita",
-  "Sellado interior",
-  "Sellado exterior",
-];
-
 export default function App() {
-  const [obra, setObra] = useState("");
-  const [bloque, setBloque] = useState("");
-  const [vivienda, setVivienda] = useState("");
-  const [rows, setRows] = useState([]);
+  const [obraSeleccionada, setObraSeleccionada] = useState("");
+  const [tareas, setTareas] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Cargar datos del Sheet según obra (pestaña)
+  // --- CARGA DATOS CUANDO CAMBIA LA OBRA ---
   useEffect(() => {
-    if (!obra) return;
+    if (!obraSeleccionada) return;
 
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(obra)}`;
+    const cargarDatos = async () => {
+      setLoading(true);
+      setError("");
+      setTareas([]);
 
-    fetch(url)
-      .then(r => r.text())
-      .then(text => {
-        const json = JSON.parse(text.substring(47, text.length - 2));
-        const cols = json.table.cols.map(c => c.label);
-        const data = json.table.rows.map(r => {
-          const obj = {};
-          r.c.forEach((cell, i) => {
-            obj[cols[i]] = cell ? cell.v : "";
-          });
-          return obj;
-        });
-        setRows(data);
-      })
-      .catch(err => {
-        console.error("Error leyendo sheet", err);
-        setRows([]);
-      });
-  }, [obra]);
+      try {
+        const url = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(
+          obraSeleccionada
+        )}`;
 
-  // Filas SOLO de la vivienda seleccionada
-  const rowsVivienda = rows.filter(r => String(r["Vivienda"]).replace("V","") === String(vivienda));
+        const res = await fetch(url);
 
-  // Progreso por tarea (último estado manda)
-  const tareasEstado = TASKS.map(t => {
-    let hecho = false;
-    rowsVivienda.forEach(r => {
-      if (String(r[t]).toLowerCase().includes("sí")) {
-        hecho = true;
+        if (!res.ok) {
+          throw new Error("No se pudo cargar el Sheet");
+        }
+
+        const data = await res.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("Datos inválidos");
+        }
+
+        setTareas(data);
+      } catch (err) {
+        console.error(err);
+        setError("Error cargando datos de la obra");
+      } finally {
+        setLoading(false);
       }
-    });
-    return { tarea: t, hecho };
-  });
+    };
 
-  const progreso = Math.round(
-    (tareasEstado.filter(t => t.hecho).length / TASKS.length) * 100
-  );
+    cargarDatos();
+  }, [obraSeleccionada]);
 
+  // --- RENDER ---
   return (
-    <div style={{ background:"#e5e5e5", minHeight:"100vh", fontFamily:"Arial" }}>
-      <header style={{
-        display:"flex",
-        justifyContent:"space-between",
-        alignItems:"center",
-        padding:10,
-        background:"#f0f0f0",
-        border:"4px double",
-        borderColor:"blue green"
-      }}>
-        <img src="/logos/innova.png" height={40} />
-        <h2>Panel de Progreso de Obra</h2>
-        <img src="/logos/winplast.png" height={40} />
-      </header>
+    <div style={{ padding: 20 }}>
+      <h2>Control de obras</h2>
 
-      <div style={{ display:"flex" }}>
-        <aside style={{
-          width:260,
-          padding:15,
-          background:"#ddd",
-          borderRight:"4px double",
-          borderColor:"blue green"
-        }}>
-          <select style={{ width:"100%", marginBottom:10 }} onChange={e=>{setObra(e.target.value);setBloque("");setVivienda("");}}>
-            <option value="">Selecciona obra</option>
-            {Object.keys(OBRAS).map(o=>(
-              <option key={o}>{o}</option>
+      {/* SELECTOR DE OBRA */}
+      <select
+        value={obraSeleccionada}
+        onChange={(e) => setObraSeleccionada(e.target.value)}
+      >
+        <option value="">Selecciona una obra</option>
+        {OBRAS.map((obra) => (
+          <option key={obra} value={obra}>
+            {obra}
+          </option>
+        ))}
+      </select>
+
+      {/* MENSAJES DE ESTADO */}
+      {!obraSeleccionada && (
+        <p style={{ marginTop: 20 }}>Selecciona una obra para empezar</p>
+      )}
+
+      {loading && <p style={{ marginTop: 20 }}>Cargando datos…</p>}
+
+      {error && (
+        <p style={{ marginTop: 20, color: "red" }}>
+          {error}
+        </p>
+      )}
+
+      {/* LISTADO DE TAREAS */}
+      {!loading && !error && tareas.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Tareas</h3>
+          <ul>
+            {tareas.map((tarea, index) => (
+              <li key={index}>
+                {tarea.Tarea || "Sin nombre"}{" "}
+                {tarea.Estado && `— ${tarea.Estado}`}
+              </li>
             ))}
-          </select>
+          </ul>
+        </div>
+      )}
 
-          {obra && (
-            <select style={{ width:"100%", marginBottom:10 }} onChange={e=>{setBloque(e.target.value);setVivienda("");}}>
-              <option value="">Selecciona bloque</option>
-              {Object.keys(OBRAS[obra
+      {/* SIN TAREAS */}
+      {!loading && obraSeleccionada && tareas.length === 0 && !error && (
+        <p style={{ marginTop: 20 }}>
+          No hay tareas para esta obra
+        </p>
+      )}
+    </div>
+  );
+}
