@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-/* === CONFIGURACIÓN OBRAS === */
+// ===== CONFIG OBRAS =====
 const OBRAS = {
   "Innova Beach III": {
-    sheetId: "AQUI_TU_SHEET_ID_III",
+    sheetId: "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw ",
     bloques: {
       "Bloque 1": [1,2,3,4,5,6],
       "Bloque 2": [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22],
@@ -11,7 +11,7 @@ const OBRAS = {
     }
   },
   "Innova Beach IV": {
-    sheetId: "AQUI_TU_SHEET_ID_IV",
+    sheetId: "17aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw",
     bloques: {
       "Bloque 1": [1,2,3,4,5,6,7,8],
       "Bloque 2": [9,10,11,12,13,14,15,16],
@@ -21,7 +21,7 @@ const OBRAS = {
     }
   },
   "Innova Thiar": {
-    sheetId: "AQUI_TU_SHEET_ID_THIAR",
+    sheetId: 17 "aB2MrWCG573pSNPatGqQ89UglR0mhCokGb1C0CG7bw",
     bloques: {
       "Bloque 1": [1,2,3,4,5,6,7,8],
       "Bloque 2": [9,10,11,12,13,14,15,16],
@@ -32,7 +32,7 @@ const OBRAS = {
   }
 };
 
-/* === TAREAS === */
+// ===== TODAS LAS TAREAS =====
 const TAREAS = [
   "Poner ventanas",
   "Poner hojas correderas",
@@ -41,46 +41,55 @@ const TAREAS = [
   "Regular",
   "Poner cierres",
   "Poner chapita",
+  "Poner ángulos exteriores",
+  "Esquinero",
   "Sellado interior",
-  "Sellado exterior"
+  "Sellado exterior",
+  "Poner puerta peatonal",
+  "Poner cristales solarium",
+  "Poner cristales terraza",
+  "Sellar cristales",
+  "Poner vigas 7016",
+  "Ventanas de sótano",
+  "Bajo escalera"
 ];
 
-export default function App() {
-  const [obra, setObra] = useState("");
-  const [bloque, setBloque] = useState("");
-  const [vivienda, setVivienda] = useState("");
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
+export default function App(){
+  const [obra,setObra] = useState("");
+  const [bloque,setBloque] = useState("");
+  const [vivienda,setVivienda] = useState("");
+  const [rows,setRows] = useState([]);
 
-  /* === CARGA DATOS GOOGLE SHEETS === */
-  useEffect(() => {
-    if (!obra) return;
-    const url = `https://docs.google.com/spreadsheets/d/${OBRAS[obra].sheetId}/gviz/tq?tqx=out:json`;
-    setLoading(true);
+  // ===== CARGAR SHEET =====
+  useEffect(()=>{
+    if(!obra) return;
+    const sheetId = OBRAS[obra].sheetId;
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
     fetch(url)
-      .then(r => r.text())
-      .then(txt => {
-        const json = JSON.parse(txt.replace(/.*setResponse\(|\);/g,""));
-        const cols = json.table.cols.map(c => c.label);
-        const data = json.table.rows.map(r => {
-          const obj = {};
-          r.c.forEach((cell,i)=>obj[cols[i]] = cell?.v || "");
-          return obj;
+      .then(r=>r.text())
+      .then(txt=>{
+        const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}")+1));
+        const cols = json.table.cols.map(c=>c.label);
+        const data = json.table.rows.map(r=>{
+          const o={};
+          r.c.forEach((c,i)=>o[cols[i]] = c?.v || "");
+          return o;
         });
         setRows(data.reverse());
-      })
-      .finally(()=>setLoading(false));
-  }, [obra]);
+      });
+  },[obra]);
 
-  /* === PROGRESO VIVIENDA === */
+  // ===== PROGRESO =====
   function progresoVivienda(num){
-    const r = rows.find(x => String(x["Vivienda"]) === `V${num}`);
-    if(!r) return {done:0,total:TAREAS.length,pct:0};
+    const ult = rows.find(r => r["Vivienda"] === `V${num}`);
+    if(!ult) return {pct:0, done:0, total:TAREAS.length};
+
     let done = 0;
     TAREAS.forEach(t=>{
-      if(String(r[t]||"").toLowerCase().includes("sí")) done++;
+      if(String(ult[t]).toLowerCase().includes("sí")) done++;
     });
+
     return {
       done,
       total:TAREAS.length,
@@ -92,26 +101,26 @@ export default function App() {
     <div style={styles.page}>
       <header style={styles.header}>
         <img src="/logos/innova.png" style={styles.logo}/>
-        <h2>Panel de Obra</h2>
+        <h2>Panel de Progreso de Obra</h2>
         <img src="/logos/winplast.png" style={styles.logo}/>
       </header>
 
       <div style={styles.body}>
         <aside style={styles.panel}>
-          <select style={styles.select} onChange={e=>{setObra(e.target.value);setBloque("");setVivienda("");}}>
+          <select onChange={e=>{setObra(e.target.value);setBloque("");}}>
             <option value="">Obra</option>
             {Object.keys(OBRAS).map(o=><option key={o}>{o}</option>)}
           </select>
 
           {obra && (
-            <select style={styles.select} onChange={e=>{setBloque(e.target.value);setVivienda("");}}>
+            <select onChange={e=>{setBloque(e.target.value);setVivienda("");}}>
               <option value="">Bloque</option>
               {Object.keys(OBRAS[obra].bloques).map(b=><option key={b}>{b}</option>)}
             </select>
           )}
 
           {bloque && (
-            <select style={styles.select} onChange={e=>setVivienda(e.target.value)}>
+            <select onChange={e=>setVivienda(e.target.value)}>
               <option value="">Vivienda</option>
               {OBRAS[obra].bloques[bloque].map(v=><option key={v}>V{v}</option>)}
             </select>
@@ -119,28 +128,27 @@ export default function App() {
         </aside>
 
         <main style={styles.main}>
-          {loading && <p>Cargando…</p>}
-          {vivienda && (
-            (()=> {
-              const p = progresoVivienda(vivienda);
-              return (
-                <div style={styles.card}>
-                  <h3>Vivienda V{vivienda}</h3>
-                  <div style={styles.bar}>
-                    <div style={{...styles.fill,width:`${p.pct}%`}}/>
-                  </div>
-                  <p>{p.done} / {p.total} tareas · {p.pct}%</p>
+          {!vivienda && <p>Selecciona una vivienda</p>}
+          {vivienda && (()=> {
+            const p = progresoVivienda(vivienda);
+            return (
+              <div style={styles.card}>
+                <h3>Vivienda V{vivienda}</h3>
+                <p>{p.done}/{p.total} tareas</p>
+                <div style={styles.bar}>
+                  <div style={{...styles.barFill,width:`${p.pct}%`}} />
                 </div>
-              );
-            })()
-          )}
+                <strong>{p.pct}%</strong>
+              </div>
+            )
+          })()}
         </main>
       </div>
     </div>
   );
 }
 
-/* === ESTILOS === */
+// ===== ESTILOS =====
 const styles = {
   page:{background:"#e6e6e6",minHeight:"100vh"},
   header:{
@@ -148,20 +156,19 @@ const styles = {
     justifyContent:"space-between",
     alignItems:"center",
     padding:10,
-    background:"#f2f2f2",
     border:"4px double",
-    borderColor:"blue green"
+    borderColor:"blue green",
+    background:"#f2f2f2"
   },
   logo:{height:40},
   body:{display:"flex"},
   panel:{
     width:260,
-    background:"#dcdcdc",
-    padding:15,
+    background:"#d9d9d9",
+    padding:10,
     borderRight:"4px double",
     borderColor:"blue green"
   },
-  select:{width:"100%",padding:6,marginBottom:10},
   main:{flex:1,padding:20},
   card:{
     background:"#fff",
@@ -170,5 +177,5 @@ const styles = {
     borderColor:"blue green"
   },
   bar:{height:12,background:"#ccc",borderRadius:6,overflow:"hidden"},
-  fill:{height:12,background:"#00aa44"}
+  barFill:{height:12,background:"green"}
 };
